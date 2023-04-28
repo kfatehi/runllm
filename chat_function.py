@@ -16,7 +16,7 @@ def read_conversation():
     try:
         with open("conversation.json", "r") as f:
             return json.load(f)
-    except FileNotFoundError:
+    except:
         return []
 
 def write_conversation(conversation):
@@ -41,8 +41,17 @@ def chat(user_prompt, tokenizer, model):
     conversation = read_conversation()
     if len(conversation) == 0:
         conversation.append({"role": "system", "content": system_prompt()})
+    conversation.append({"role": "user", "content": user_prompt })
     truncated_conversation = truncate_conversation(conversation, user_prompt, tokenizer)
-    input_text = f"{system_prompt()}\n{''.join([msg['content'] for msg in truncated_conversation])}\n{user_prompt}\n\n"
+    input_text = ""
+    for msg in truncated_conversation:
+        if msg["role"] == "system":
+            input_text += "<|SYSTEM|>"+msg["content"]
+        elif msg["role"] == "user":
+            input_text += "<|USER|>"+msg["content"]
+        elif msg["role"] == "assistant":
+            input_text += "<|ASSISTANT|>"+msg["content"]
+    input_text+= "<|ASSISTANT|>"
     print(input_text)
     inputs = tokenizer(input_text, return_tensors="pt").to("cuda")
     tokens = model.generate(
@@ -56,4 +65,4 @@ def chat(user_prompt, tokenizer, model):
     truncated_conversation.append({"role": "user", "content": user_prompt})
     truncated_conversation.append({"role": "assistant", "content": response})
     write_conversation(truncated_conversation)
-    return "\n\nStableLM:\n"+response
+    return "" #\n\nStableLM:\n"+response
