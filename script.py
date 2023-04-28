@@ -14,8 +14,20 @@ def system_prompt():
     with open("system.txt", "r") as f:
         return f.read()
 
+def read_conversation():
+    try:
+        with open("conversation.txt", "r") as f:
+            return f.read()
+    except FileNotFoundError:
+        return ""
+
+def write_conversation(conversation):
+    with open("conversation.txt", "w") as f:
+        f.write(conversation)
+
 def chat(prompt):
-    inputs = tokenizer(prompt, return_tensors="pt").to("cuda")
+    conversation = read_conversation()
+    inputs = tokenizer(conversation + prompt, return_tensors="pt").to("cuda")
     tokens = model.generate(
         **inputs,
         max_new_tokens=64,
@@ -23,7 +35,10 @@ def chat(prompt):
         do_sample=True,
         stopping_criteria=StoppingCriteriaList([StopOnTokens()])
     )
-    return tokenizer.decode(tokens[0], skip_special_tokens=True)
+    response = tokenizer.decode(tokens[0], skip_special_tokens=True)
+    truncated_conversation = conversation[-1000:]  # Adjust the truncation value as needed
+    write_conversation(truncated_conversation + f"You: {prompt}\nStableLM: {response}\n")
+    return response
 
 print("Welcome to the StableLM Tuned (Alpha version) chat!")
 
